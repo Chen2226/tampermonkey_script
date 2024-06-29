@@ -5,7 +5,7 @@
 // @description  try to take over the world!
 // @author       Chen
 // @match        *://fxg.jinritemai.com/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=tampermonkey.net
+// @icon         https://server.cutil.top/upload/20240110/436a0e934fb36bb06542d11cfe9cb1be.png
 // @grant        none
 // ==/UserScript==
 
@@ -78,7 +78,6 @@
     }
 
     // 批量关闭达人测评相关代码
-    var intervalId = null;
     var isPaused = true;
 
     function processCurrentPage() {
@@ -157,10 +156,6 @@
             console.log('No "批量关闭" button found.');
         }
     }
-
-
-
-    // intervalId = setInterval(processCurrentPage, 20000);
 
     document.addEventListener('keydown', function (event) {
         if (event.key === 'k' || event.key === 'K') {
