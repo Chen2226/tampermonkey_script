@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         抖店自动操作
 // @namespace    http://tampermonkey.net/
-// @version      2024-06-06
+// @version      2024-06-29
 // @description  try to take over the world!
 // @author       Chen
 // @match        *://fxg.jinritemai.com/*
@@ -27,7 +27,7 @@
     function addButton() {
         let button = document.createElement("button");
         button.id = "close-assessment";
-        button.innerHTML = "开启脚本";
+        button.innerHTML = "开始自动关闭测评";
         button.className = "layui-btn layui-bg-blue";
         button.style.position = "fixed";
         button.style.top = "80px";
@@ -68,7 +68,7 @@
         isPaused = !isPaused;
         var button = document.getElementById("close-assessment");
         if (button) {
-            button.innerHTML = isPaused ? "开启脚本" : "停止脚本";
+            button.innerHTML = isPaused ? "开始自动关闭测评" : "停止自动关闭测评";
         }
         layer.msg(isPaused ? "停止脚本！" : "开启脚本！");
         if (!isPaused) {
