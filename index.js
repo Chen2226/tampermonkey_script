@@ -66,12 +66,11 @@
 
     function togglePause() {
         isPaused = !isPaused;
-        var message = isPaused ? "停止脚本！" : "开启脚本！";
-        layer.msg(message);
         var button = document.getElementById("close-assessment");
         if (button) {
             button.innerHTML = isPaused ? "开启脚本" : "停止脚本";
         }
+        layer.msg(isPaused ? "停止脚本！" : "开启脚本！");
         if (!isPaused) {
             processCurrentPage()
         }
