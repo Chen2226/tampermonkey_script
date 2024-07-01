@@ -53,6 +53,8 @@
 
     // URL 变化时的处理
     const onUrlChange = () => {
+        // 每次 URL 变化时都暂停脚本
+        isPaused = true;
         const AppraisalButton = document.getElementById("close-assessment");  // 查找关闭测评按钮
         const DelGoodButton = document.getElementById("del-good");  // 查找关闭测评按钮
         if (window.location.href.includes("fxg.jinritemai.com/ffa/g/material/talent-quiz")) {  // 如果 URL 包含测评页面的路径
