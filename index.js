@@ -93,18 +93,18 @@
     const AppraisaltogglePause = () => {
         isPaused = !isPaused;  // 切换暂停状态
         const button = document.getElementById("close-assessment");
-        if (button) button.innerHTML = isPaused ? "开始自动关闭测评" : "停止自动关闭测评";  // 更新按钮文本
-        layer.msg(isPaused ? "停止脚本！" : "开启脚本！");  // 显示提示消息
-        if (!isPaused) processCurrentPage('close-assessment');  // 如果没有暂停，则处理当前页面
+        if (button) button.innerHTML = isPaused ? "开始自动关闭测评" : "停止自动关闭测评";
+        layer.msg(isPaused ? "停止脚本！" : "开启脚本！");
+        if (!isPaused) processCurrentPage('close-assessment');
     };
 
     // 彻底删除暂停状态
     const DelGoodTogglePause = () => {
         isPaused = !isPaused;  // 切换暂停状态
         const button = document.getElementById("del-good");
-        if (button) button.innerHTML = isPaused ? "开始自动彻底删除" : "停止自动彻底删除";  // 更新按钮文本
-        layer.msg(isPaused ? "停止脚本！" : "开启脚本！");  // 显示提示消息
-        if (!isPaused) processCurrentPage('del-good');  // 如果没有暂停，则处理当前页面
+        if (button) button.innerHTML = isPaused ? "开始自动彻底删除" : "停止自动彻底删除";
+        layer.msg(isPaused ? "停止脚本！" : "开启脚本！");
+        if (!isPaused) processCurrentPage('del-good');
     };
 
     // 处理当前页面的任务
@@ -185,17 +185,16 @@
         let batchCloseTriggered = false;
 
         document.querySelectorAll('button.ecom-g-btn-sm').forEach(buttonElement => {
-            const span = buttonElement.querySelector('span');  // 查找按钮中的 span 元素
-            if (span && span.textContent.trim() === "批量关闭") {  // 查找包含“批量关闭”文本的按钮
+            const span = buttonElement.querySelector('span');
+            if (span && span.textContent.trim() === "批量关闭") {
                 buttonElement.click();  // 点击按钮
                 console.log('Batch close button clicked.');
                 batchCloseTriggered = true;
 
                 const lodingId = setInterval(() => {
-                    if (!document.querySelector('.ecom-g-spin-dot-spin')) {  // 等待页面加载完成
+                    if (!document.querySelector('.ecom-g-spin-dot-spin')) {
                         clearInterval(lodingId);  // 清除定时器
                         layer.msg('下一页');  // 显示提示消息
-                        // setTimeout(triggerPreviousPageClick, 500);  // 触发“下一页”按钮点击事件
                         triggerPreviousPageClick(() => {
                             setTimeout(() => processCurrentPage('close-assessment'), 500);
                         })
@@ -211,7 +210,7 @@
 
     // 触发“彻底删除”按钮的点击事件
     const triggerBatchDelButtonClick = () => {
-        if (isPaused) return;  // 如果处于暂停状态，则不执行任何操作
+        if (isPaused) return;
         let batchCloseTriggered = false;
 
         document.querySelectorAll('button.ecom-g-btn-sm').forEach(buttonElement => {
@@ -223,9 +222,9 @@
 
                 let isYes = false;
 
-                // 等待.ecom-g-modal-confirm-btns确认框出现，获取里面的button，button里面的span的文本是“确认”
+                // 等待确认框出现
                 const qrId = setInterval(() => {
-                    if (document.querySelector('.ecom-g-modal-confirm-btns')) {  // 等待页面加载完成
+                    if (document.querySelector('.ecom-g-modal-confirm-btns')) {
                         clearInterval(qrId);  // 清除定时器
                         document.querySelectorAll('.ecom-g-modal-confirm-btns button').forEach(buttonElement => {
                             const span = buttonElement.querySelector('span');
@@ -243,21 +242,21 @@
                     if (isYes) {  // 等待页面加载完成
                         clearInterval(YesId);  // 清除定时器
 
-                        // 检测.ecom-g-message-notice-content是否存在
+                        // 等待提示删除成功
                         const messageId = setInterval(() => {
-                            if (document.querySelector('.ecom-g-message-notice-content')) {  // 等待提示删除成功
+                            if (document.querySelector('.ecom-g-message-notice-content')) {
                                 console.log(document.querySelector('.ecom-g-message-notice-content'))
                                 clearInterval(messageId);  // 清除定时器
 
-                                // setTimeout(() => processCurrentPage('del-good'), 500);
-                                // 触发查询按钮，class=ecom-g-btn-dashed ecom-g-btn-s，button里面span文本是查询
+                                // 触发查询按钮
                                 document.querySelectorAll('button.ecom-g-btn-dashed').forEach(buttonElement => {
                                     const span = buttonElement.querySelector('span');
                                     if (span && span.textContent.trim() === "查询") {
                                         span.click();  // 点击按钮
                                         console.log('Batch close button clicked.');
                                         const lodingId = setInterval(() => {
-                                            if (!document.querySelector('.ecom-g-spin-dot-spin')) {  // 等待页面加载完成
+                                            // 等待加载完成
+                                            if (!document.querySelector('.ecom-g-spin-dot-spin')) {
                                                 clearInterval(lodingId);  // 清除定时器
                                                 setTimeout(() => processCurrentPage('del-good'), 1000);
                                             }
