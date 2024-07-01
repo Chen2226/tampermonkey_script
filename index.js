@@ -7,445 +7,314 @@
 // @match        *://fxg.jinritemai.com/*
 // @icon         https://server.cutil.top/upload/20240110/436a0e934fb36bb06542d11cfe9cb1be.png
 // @grant        none
+
 // ==/UserScript==
 
 (function () {
     'use strict';
 
-    let isPaused = true;
+    let isPaused = true;  // 用于标记脚本是否处于暂停状态
 
-    // 引入layui
-    let script = document.createElement("script");
-    script.setAttribute("type", "text/javascript");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.13/layui.js";
-    document.documentElement.appendChild(script);
-    document.documentElement.appendChild(script);
-    let link = document.createElement("link");
-    link.setAttribute("rel", "stylesheet");
-    link.href = "https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.13/css/layui.css";
-    document.documentElement.appendChild(link);
+    // 引入 layui 脚本
+    const addScript = (src, type = 'text/javascript') => {
+        const script = document.createElement("script");
+        script.setAttribute("type", type);
+        script.src = src;
+        document.documentElement.appendChild(script);
+    };
+
+    // 引入 layui 样式
+    const addLink = (href, rel = 'stylesheet') => {
+        const link = document.createElement("link");
+        link.setAttribute("rel", rel);
+        link.href = href;
+        document.documentElement.appendChild(link);
+    };
+
+    addScript("https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.13/layui.js");
+    addLink("https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.13/css/layui.css");
 
     console.log('ojbk');
 
-    // 添加批量删除商品按钮
-    function addDelCommodityButton() {
-        let button = document.createElement("button");
-        button.id = "del-commodity";
-        button.innerHTML = "开始自动删除商品";
-        button.className = "layui-btn layui-bg-blue";
-        button.style.position = "fixed";
-        button.style.top = "80px";
-        button.style.right = "20px";
-        button.style.zIndex = 9999;
-        button.onclick = delCommodityTogglePause;
-        document.body.appendChild(button);
-    }
-
-    // 切换删除商品暂停状态
-    function delCommodityTogglePause() {
-        const button = document.getElementById("del-commodity");
-        if (!isPaused) {
-            isPaused = true;
-            if (button) {
-                button.innerHTML = "开启自动删除商品";
-            }
-            layer.msg("停止脚本！");
-            return;
-        }
-        layer.prompt({title: '请输入要删除的商品ID', formType: 2}, function (value, index, elem) {
-            if (value === '') {
-                layer.msg('没有输入id');
-                return elem.focus();
-            }
-            // 分割
-            const ids = value.split(/[\n,，\s]+/);
-            console.log(ids);
-            // 去空
-            const idsFiltered = ids.filter(id => id !== '');
-            console.log(idsFiltered);
-            // 提示用户本次删除商品的数量，然后给个确认按钮，确认后开始删除
-            layer.confirm(`本次将删除${idsFiltered.length}个商品，是否继续？`, {
-                btn: ['确定', '取消']
-            }, function () {
-                isPaused = false;
-                if (button) {
-                    button.innerHTML = "停止自动删除商品";
-                }
-                layer.msg("开启脚本！");
-                processCurrentPage('del-commodity', idsFiltered)
-                layer.close(index);
-            }, function () {
-                layer.msg('取消');
-                layer.close(index);
-            });
-        });
-    }
-
-
-    // 开始执行删除商品
-    async function DelCommodity(ids) {
-        if (isPaused) return;
-
-        //循环删除商品，每次二十个
-        let idsGroup = [];
-        for (let i = 0; i < ids.length; i += 20) {
-            idsGroup.push(ids.slice(i, i + 20));
-        }
-        idsGroup.length = 1;
-
-        // 开始循环
-        for (let i = 0; i < idsGroup.length; i++) {
-            // 不使用定时器，直接循环，因为删除商品的请求是异步的，不会阻塞
-            let ids = idsGroup[i];
-            layer.msg(`开始删除第 ${i + 1} 组商品`);
-            let inputs = document.querySelectorAll('input.ecom-g-input-borderless[placeholder="请输入商品名称/商品ID/商家编码，多条可用逗号隔开"]');
-            if (inputs.length === 0) {
-                layer.msg('没有找到输入框');
-                return;
-            }
-            console.log(inputs)
-
-            inputs[0].click();
-            // 触发鼠标移动到按钮上的事件
-            Util.triggerMouseEvent(inputs[0], 'mouseover');
-            Util.triggerMouseEvent(inputs[0], 'mousemove');
-
-            // 触发按钮点击事件
-            Util.triggerMouseEvent(inputs[0], 'mousedown');
-            Util.triggerMouseEvent(inputs[0], 'mouseup');
-            Util.triggerMouseEvent(inputs[0], 'click');
-
-            // 强制停止100ms
-            await new Promise(resolve => setTimeout(resolve, 100));
-            console.log('输入')
-            // 触发 123 键的事件
-            // Util.triggerKeyboardEvent(inputs[0], '1', 49);
-            // Util.triggerKeyboardEvent(inputs[0], '2', 50);
-            // Util.triggerKeyboardEvent(inputs[0], '3', 51);
-
-            let text = ids.join(',');
-            // 将text复制到剪贴板
-            const input = document.createElement('input');
-            input.style.position = 'fixed';
-            input.style.opacity = 0;
-            input.value = text;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand('copy');
-            document.body.removeChild(input);
-            // 触发粘贴事件ctrl+v
-            // Util.triggerKeyboardEvent(inputs[0], 'V', 86, true);
-
-
-
-
-            // document.querySelectorAll('input.ecom-g-input-borderless[placeholder="请输入商品名称/商品ID/商家编码，多条可用逗号隔开"]')[0].value = ids.join(',');
-            // inputs[0].value = ids.join(',');
-            console.log(ids.join(','))
-
-            return;
-            let buttons = document.querySelectorAll('button.ecom-g-btn-dashed');
-            if (buttons.length === 0) {
-                layer.msg('没有找到查询按钮');
-                return;
-            }
-            for (let j = 0; j < buttons.length; j++) {
-                let span = buttons[j].querySelector('span');
-                if (span && span.textContent === '查询') {
-                    buttons[j].click();
-                    break;
-                }
-            }
-
-            var lodingId = setInterval(function () {
-                if (!document.querySelector('span.ecom-g-spin-dot-spin')) {
-                    clearInterval(lodingId);
-                    // 触发全选
-                    var thElements = document.querySelectorAll('th.ecom-g-table-cell');
-                    thElements.forEach(function (thElement) {
-                        if (thElement.textContent.trim() === "商品信息") {
-                            var previousSibling = thElement.previousElementSibling;
-                            if (previousSibling) {
-                                var input = previousSibling.querySelector('input');
-                                if (input) {
-                                    input.click();
-
-                                }
-                            }
-                        }
-                    });
-                }
-            }, 200);
-
-        }
-    }
-
-
     // 监听 URL 变化
-    function monitorUrlChanges() {
-        let previousUrl = window.location.href;
+    const monitorUrlChanges = () => {
+        let previousUrl = window.location.href;  // 记录之前的 URL
         const observer = new MutationObserver(() => {
-            const currentUrl = window.location.href;
-            if (currentUrl !== previousUrl) {
-                previousUrl = currentUrl;
-                onUrlChange();
+            const currentUrl = window.location.href;  // 获取当前的 URL
+            if (currentUrl !== previousUrl) {  // 如果 URL 发生变化
+                previousUrl = currentUrl;  // 更新之前的 URL
+                onUrlChange();  // 调用 URL 变化时的处理函数
             }
         });
 
-        const config = {subtree: true, childList: true};
-        observer.observe(document, config);
-    }
+        // 监听整个文档的 DOM 变化
+        observer.observe(document, {subtree: true, childList: true});
+    };
 
     // URL 变化时的处理
-    function onUrlChange() {
-        const Appraisalbutton = document.getElementById("close-assessment");
-        const DelCommdityButton = document.getElementById("del-commodity");
-        if (window.location.href.includes("fxg.jinritemai.com/ffa/g/material/talent-quiz")) {
-            if (!Appraisalbutton) {
-                addAppraisalButton();
-            }
+    const onUrlChange = () => {
+        const AppraisalButton = document.getElementById("close-assessment");  // 查找关闭测评按钮
+        const DelGoodButton = document.getElementById("del-good");  // 查找关闭测评按钮
+        if (window.location.href.includes("fxg.jinritemai.com/ffa/g/material/talent-quiz")) {  // 如果 URL 包含测评页面的路径
+            if (!AppraisalButton) addAppraisalButton();  // 如果按钮不存在，则添加按钮
         } else {
-            if (Appraisalbutton) {
-                Appraisalbutton.remove();
-            }
+            if (AppraisalButton) AppraisalButton.remove();  // 如果不在测评页面且按钮存在，则移除按钮
         }
-        if (window.location.href.includes("fxg.jinritemai.com/ffa/g/list")) {
-            if (!DelCommdityButton) {
-                addDelCommodityButton();
-            }
+        if (window.location.href.includes("fxg.jinritemai.com/ffa/g/recycle")) {  // 回收站
+            if (!DelGoodButton) addDelGoodButton();  // 如果按钮不存在，则添加按钮
         } else {
-            if (DelCommdityButton) {
-                DelCommdityButton.remove();
-            }
+            if (DelGoodButton) DelGoodButton.remove();  // 如果不在测评页面且按钮存在，则移除按钮
         }
-    }
+    };
 
-    // 批量关闭达人测评相关代码
     // 添加关闭测评按钮
-    function addAppraisalButton() {
-        let button = document.createElement("button");
-        button.id = "close-assessment";
-        button.innerHTML = "开始自动关闭测评";
-        button.className = "layui-btn layui-bg-blue";
-        button.style.position = "fixed";
-        button.style.top = "80px";
-        button.style.right = "20px";
-        button.style.zIndex = 9999;
-        button.onclick = AppraisaltogglePause;
-        document.body.appendChild(button);
-    }
+    const addAppraisalButton = () => {
+        const button = document.createElement("button");
+        button.id = "close-assessment";  // 设置按钮的 ID
+        button.innerHTML = "开始自动关闭测评";  // 设置按钮的文本
+        button.className = "layui-btn layui-bg-blue";  // 设置按钮的样式
+        button.style.cssText = "position: fixed; top: 80px; right: 20px; z-index: 9999;";  // 设置按钮的位置和层级
+        button.onclick = AppraisaltogglePause;  // 绑定按钮的点击事件
+        document.body.appendChild(button);  // 将按钮添加到页面中
+    };
+
+    // 添加删除回收站按钮
+    const addDelGoodButton = () => {
+        const button = document.createElement("button");
+        button.id = "del-good";  // 设置按钮的 ID
+        button.innerHTML = "开始自动彻底删除";  // 设置按钮的文本
+        button.className = "layui-btn layui-bg-blue";  // 设置按钮的样式
+        button.style.cssText = "position: fixed; top: 80px; right: 20px; z-index: 9999;";  // 设置按钮的位置和层级
+        button.onclick = DelGoodTogglePause;  // 绑定按钮的点击事件
+        document.body.appendChild(button);  // 将按钮添加到页面中
+    };
 
     // 切换测评暂停状态
-    function AppraisaltogglePause() {
-        isPaused = !isPaused;
-        var button = document.getElementById("close-assessment");
-        if (button) {
-            button.innerHTML = isPaused ? "开始自动关闭测评" : "停止自动关闭测评";
-        }
-        layer.msg(isPaused ? "停止脚本！" : "开启脚本！");
-        if (!isPaused) {
-            processCurrentPage('close-assessment')
-        }
-    }
+    const AppraisaltogglePause = () => {
+        isPaused = !isPaused;  // 切换暂停状态
+        const button = document.getElementById("close-assessment");
+        if (button) button.innerHTML = isPaused ? "开始自动关闭测评" : "停止自动关闭测评";  // 更新按钮文本
+        layer.msg(isPaused ? "停止脚本！" : "开启脚本！");  // 显示提示消息
+        if (!isPaused) processCurrentPage('close-assessment');  // 如果没有暂停，则处理当前页面
+    };
 
+    // 彻底删除暂停状态
+    const DelGoodTogglePause = () => {
+        isPaused = !isPaused;  // 切换暂停状态
+        const button = document.getElementById("del-good");
+        if (button) button.innerHTML = isPaused ? "开始自动彻底删除" : "停止自动彻底删除";  // 更新按钮文本
+        layer.msg(isPaused ? "停止脚本！" : "开启脚本！");  // 显示提示消息
+        if (!isPaused) processCurrentPage('del-good');  // 如果没有暂停，则处理当前页面
+    };
 
-    function processCurrentPage(type, value = null) {
-        if (isPaused) return;
+    // 处理当前页面的任务
+    const processCurrentPage = (type, value = null) => {
+        if (isPaused) return;  // 如果处于暂停状态，则不执行任何操作
         switch (type) {
-            case 'close-assessment':
-                triggerSiblingInputClick();
+            case 'close-assessment':  // 处理关闭测评的任务
+                triggerSiblingInputClick(() => {
+                    setTimeout(() => {
+                        triggerBatchCloseButtonClick();
+                    }, 500);
+                });
                 break;
-            case 'del-commodity':
-                console.log('leixing')
-                DelCommodity(value);
+            case 'del-good':  // 彻底删除回收站的任务
+                triggerSiblingInputClick(() => {
+                    setTimeout(() => {
+                        triggerBatchDelButtonClick();
+                    }, 500);
+                });
                 break;
-            default:
-                layer.msg('未知类型');
-        }
-    }
 
-    function triggerPreviousPageClick() {
-        if (isPaused) return;
-        var liElement = document.querySelector('li[title="下一页"]');
+            default:
+                layer.msg('未知类型');  // 显示未知类型的提示消息
+        }
+    };
+
+    // 触发“下一页”按钮的点击事件
+    const triggerPreviousPageClick = (fun) => {
+        if (isPaused) return;  // 如果处于暂停状态，则不执行任何操作
+        const liElement = document.querySelector('li[title="下一页"]');  // 查找“下一页”按钮所在的 <li> 元素
         if (liElement) {
-            var button = liElement.querySelector('button');
+            const button = liElement.querySelector('button');  // 查找 <li> 元素中的按钮
             if (button) {
-                button.click();
+                button.click();  // 点击按钮
                 console.log('Next page button clicked.');
-                var lodingId = setInterval(function () {
-                    if (!document.querySelector('.ecom-g-spin-dot-spin')) {
-                        clearInterval(lodingId);
-                        setTimeout(processCurrentPage('close-assessment'), 500);
+                const lodingId = setInterval(() => {
+                    if (!document.querySelector('.ecom-g-spin-dot-spin')) {  // 等待页面加载完成
+                        clearInterval(lodingId);  // 清除定时器
+                        fun()
                     }
-                }, 200);
+                }, 500);
             } else {
-                console.log('Button not found within <li> element.');
+                console.log('Button not found within <li> element.');  // 未找到按钮的提示
             }
         } else {
-            console.log('<li> element with title "下一页" not found.');
+            console.log('<li> element with title "下一页" not found.');  // 未找到“下一页”按钮的提示
         }
-    }
+    };
 
-    function triggerSiblingInputClick() {
-        if (isPaused) return;
-        var thElements = document.querySelectorAll('th.ecom-g-table-cell');
-        thElements.forEach(function (thElement) {
-            if (thElement.textContent.trim() === "商品信息") {
-                var previousSibling = thElement.previousElementSibling;
+    // 触发全选的点击事件
+    const triggerSiblingInputClick = (fun) => {
+        if (isPaused) return;  // 如果处于暂停状态，则不执行任何操作
+        document.querySelectorAll('th.ecom-g-table-cell').forEach(thElement => {
+            if (thElement.textContent.trim() === "商品信息") {  // 查找包含“商品信息”文本的 <th> 元素
+                const previousSibling = thElement.previousElementSibling;  // 获取前一个兄弟元素
                 if (previousSibling) {
-                    var input = previousSibling.querySelector('input');
+                    const input = previousSibling.querySelector('input');  // 查找兄弟元素中的 input 元素
                     if (input) {
-                        input.click();
+                        input.click();  // 点击 input 元素
                         console.log('Input in sibling element clicked.');
-                        setTimeout(triggerBatchCloseButtonClick, 500);
+                        // setTimeout(triggerBatchCloseButtonClick, 500);  // 处理批量关闭按钮
+                        if (fun) {
+                            fun()
+                        }
                     } else {
-                        console.log('Input not found within previous sibling.');
+                        console.log('Input not found within previous sibling.');  // 未找到 input 元素的提示
                     }
                 } else {
-                    console.log('Previous sibling not found.');
+                    console.log('Previous sibling not found.');  // 未找到兄弟元素的提示
                 }
             }
         });
-    }
+    };
 
-    function triggerBatchCloseButtonClick() {
-        if (isPaused) return;
+    // 触发“批量关闭”按钮的点击事件
+    const triggerBatchCloseButtonClick = () => {
+        if (isPaused) return;  // 如果处于暂停状态，则不执行任何操作
+        let batchCloseTriggered = false;
 
-        var buttonElements = document.querySelectorAll('button.ecom-g-btn-sm');
-        var batchCloseTriggered = false;
-
-        buttonElements.forEach(function (buttonElement) {
-            var span = buttonElement.querySelector('span');
-            if (span && span.textContent.trim() === "批量关闭") {
-                buttonElement.click();
+        document.querySelectorAll('button.ecom-g-btn-sm').forEach(buttonElement => {
+            const span = buttonElement.querySelector('span');  // 查找按钮中的 span 元素
+            if (span && span.textContent.trim() === "批量关闭") {  // 查找包含“批量关闭”文本的按钮
+                buttonElement.click();  // 点击按钮
                 console.log('Batch close button clicked.');
                 batchCloseTriggered = true;
 
-                var lodingId = setInterval(function () {
-                    if (!document.querySelector('.ecom-g-spin-dot-spin')) {
-                        clearInterval(lodingId);
-                        layer.msg('下一页');
-                        setTimeout(triggerPreviousPageClick, 500);
+                const lodingId = setInterval(() => {
+                    if (!document.querySelector('.ecom-g-spin-dot-spin')) {  // 等待页面加载完成
+                        clearInterval(lodingId);  // 清除定时器
+                        layer.msg('下一页');  // 显示提示消息
+                        // setTimeout(triggerPreviousPageClick, 500);  // 触发“下一页”按钮点击事件
+                        triggerPreviousPageClick(() => {
+                            setTimeout(() => processCurrentPage('close-assessment'), 500);
+                        })
                     }
-                }, 200);
+                }, 500);
             }
         });
 
         if (!batchCloseTriggered) {
-            console.log('No "批量关闭" button found.');
+            console.log('No "批量关闭" button found.');  // 未找到“批量关闭”按钮的提示
         }
-    }
-
-    window.onload = () => {
-        onUrlChange();
-        monitorUrlChanges();
-        // interceptAllRequestsFor10Seconds();
     };
 
-    function interceptAllRequestsFor10Seconds() {
-        const originalFetch = window.fetch;
-        const originalOpen = XMLHttpRequest.prototype.open;
+    // 触发“彻底删除”按钮的点击事件
+    const triggerBatchDelButtonClick = () => {
+        if (isPaused) return;  // 如果处于暂停状态，则不执行任何操作
+        let batchCloseTriggered = false;
+
+        document.querySelectorAll('button.ecom-g-btn-sm').forEach(buttonElement => {
+            const span = buttonElement.querySelector('span');
+            if (span && span.textContent.trim() === "彻底删除") {
+                buttonElement.click();  // 点击按钮
+                console.log('Batch close button clicked.');
+                batchCloseTriggered = true;
+
+                let isYes = false;
+
+                // 等待.ecom-g-modal-confirm-btns确认框出现，获取里面的button，button里面的span的文本是“确认”
+                const qrId = setInterval(() => {
+                    if (document.querySelector('.ecom-g-modal-confirm-btns')) {  // 等待页面加载完成
+                        clearInterval(qrId);  // 清除定时器
+                        document.querySelectorAll('.ecom-g-modal-confirm-btns button').forEach(buttonElement => {
+                            const span = buttonElement.querySelector('span');
+                            if (span && span.textContent.trim() === "确认") {
+                                buttonElement.click();  // 点击按钮
+                                console.log('Batch close button clicked.');
+                                isYes = true;
+                            }
+                        });
+                    }
+                }, 500);
+
+                // 等待isYes为true
+                const YesId = setInterval(() => {
+                    if (isYes) {  // 等待页面加载完成
+                        clearInterval(YesId);  // 清除定时器
+
+                        // 检测.ecom-g-message-notice-content是否存在
+                        const messageId = setInterval(() => {
+                            if (document.querySelector('.ecom-g-message-notice-content')) {  // 等待提示删除成功
+                                console.log(document.querySelector('.ecom-g-message-notice-content'))
+                                clearInterval(messageId);  // 清除定时器
+
+                                // setTimeout(() => processCurrentPage('del-good'), 500);
+                                // 触发查询按钮，class=ecom-g-btn-dashed ecom-g-btn-s，button里面span文本是查询
+                                document.querySelectorAll('button.ecom-g-btn-dashed').forEach(buttonElement => {
+                                    const span = buttonElement.querySelector('span');
+                                    if (span && span.textContent.trim() === "查询") {
+                                        span.click();  // 点击按钮
+                                        console.log('Batch close button clicked.');
+                                        const lodingId = setInterval(() => {
+                                            if (!document.querySelector('.ecom-g-spin-dot-spin')) {  // 等待页面加载完成
+                                                clearInterval(lodingId);  // 清除定时器
+                                                setTimeout(() => processCurrentPage('del-good'), 1000);
+                                            }
+                                        }, 500);
+                                    }
+                                });
+                            }
+                        }, 300);
+                    }
+                }, 100);
+            }
+        });
+
+        if (!batchCloseTriggered) {
+            console.log('No "彻底删除" button found.');  // 未找到“批量关闭”按钮的提示
+        }
+    };
+
+    window.onload = () => {
+        onUrlChange();  // 页面加载时检查 URL 变化
+        monitorUrlChanges();  // 监听 URL 变化
+        // interceptAllRequestsFor10Seconds();  // 可选择拦截请求的代码
+    };
+
+    // 可选择拦截请求的代码
+    const interceptAllRequestsFor10Seconds = () => {
+        const originalFetch = window.fetch;  // 保存原始的 fetch 函数
+        const originalOpen = XMLHttpRequest.prototype.open;  // 保存原始的 XMLHttpRequest.open 函数
 
         // 拦截 fetch 请求
-        window.fetch = function (...args) {
-            console.log(`Intercepted fetch request to: ${args[0]}`);
+        window.fetch = (...args) => {
+            console.log(`Intercepted fetch request to: ${args[0]}`);  // 打印请求的 URL
             return new Promise((resolve, reject) => {
                 setTimeout(() => {
-                    layer.msg('请求被拦截了');
-                    reject(new Error('Request blocked'));
-                }, 10_000); // 10 秒
+                    layer.msg('请求被拦截了');  // 显示请求被拦截的提示
+                    reject(new Error('Request blocked'));  // 拒绝请求
+                }, 10_000);  // 10 秒
             });
         };
 
         // 拦截 XMLHttpRequest 请求
         XMLHttpRequest.prototype.open = function (...args) {
-            console.log(`Intercepted XMLHttpRequest to: ${args[1]}`);
-            layer.msg('请求被拦截了');
-            this.abort(); // 立即中止请求
+            console.log(`Intercepted XMLHttpRequest to: ${args[1]}`);  // 打印请求的 URL
+            layer.msg('请求被拦截了');  // 显示请求被拦截的提示
+            this.abort();  // 立即中止请求
         };
 
         // 10秒后恢复请求
         // setTimeout(() => {
-        //     window.fetch = originalFetch;
-        //     XMLHttpRequest.prototype.open = originalOpen;
-        //     console.log('恢复了所有网络请求');
-        //     layer.msg('请求恢复');
-        // }, 10_000); // 10 秒
-    }
-
+        //     window.fetch = originalFetch;  // 恢复原始的 fetch 函数
+        //     XMLHttpRequest.prototype.open = originalOpen;  // 恢复原始的 XMLHttpRequest.open 函数
+        //     console.log('恢复了所有网络请求');  // 打印恢复请求的消息
+        //     layer.msg('请求恢复');  // 显示请求恢复的提示
+        // }, 10_000);  // 10 秒
+    };
 
     class Util {
-
-        // 创建并触发键盘事件的函数
-        static triggerKeyboardEvent(el, key, keyCode, ctrlKey = false) {
-            key = key.toUpperCase();
-
-            // 创建 keydown 事件
-            const keydownEvent = new KeyboardEvent('keydown', {
-                key: key,
-                code: 'Key' + key.toUpperCase(),
-                keyCode: keyCode,
-                charCode: keyCode,
-                which: keyCode,
-                bubbles: true,
-                cancelable: true,
-                composed: true,
-                ctrlKey: ctrlKey,  // 设置 ctrlKey
-                metaKey: false,
-                shiftKey: false,
-                altKey: false
-            });
-
-            // 创建 keypress 事件
-            const keypressEvent = new KeyboardEvent('keypress', {
-                key: key,
-                code: 'Key' + key.toUpperCase(),
-                keyCode: keyCode,
-                charCode: keyCode,
-                which: keyCode,
-                bubbles: true,
-                cancelable: true,
-                composed: true,
-                ctrlKey: ctrlKey,  // 设置 ctrlKey
-                metaKey: false,
-                shiftKey: false,
-                altKey: false
-            });
-
-            // 创建 keyup 事件
-            const keyupEvent = new KeyboardEvent('keyup', {
-                key: key,
-                code: 'Key' + key.toUpperCase(),
-                keyCode: keyCode,
-                charCode: keyCode,
-                which: keyCode,
-                bubbles: true,
-                cancelable: true,
-                composed: true,
-                ctrlKey: ctrlKey,  // 设置 ctrlKey
-                metaKey: false,
-                shiftKey: false,
-                altKey: false
-            });
-
-            // 确保目标元素有焦点
-            el.focus();
-            el.dispatchEvent(keydownEvent);
-            el.dispatchEvent(keypressEvent);
-            el.dispatchEvent(keyupEvent);
-        }
-
-        // 创建并触发鼠标事件的函数
-        static triggerMouseEvent(el, eventType) {
-            // 创建鼠标事件
-            var mouseEvent = new MouseEvent(eventType, {
-                view: window,
-                bubbles: true,
-                cancelable: true
-            });
-
-            // 触发事件
-            el.dispatchEvent(mouseEvent);
-        }
+        // 这里可以添加公共工具方法
     }
 })();
