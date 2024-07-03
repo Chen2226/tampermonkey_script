@@ -6,7 +6,8 @@
 // @author       Chen
 // @match        *://fxg.jinritemai.com/*
 // @icon         https://server.cutil.top/upload/20240110/436a0e934fb36bb06542d11cfe9cb1be.png
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @run-at       document-start
 
 // ==/UserScript==
 
@@ -15,26 +16,27 @@
 
     let isPaused = true;  // 用于标记脚本是否处于暂停状态
 
-    // 引入 layui 脚本
+    // 引入 脚本
     const addScript = (src, type = 'text/javascript') => {
         const script = document.createElement("script");
         script.setAttribute("type", type);
         script.src = src;
         document.documentElement.appendChild(script);
     };
-
-    // 引入 layui 样式
+    // 引入 样式
     const addLink = (href, rel = 'stylesheet') => {
         const link = document.createElement("link");
         link.setAttribute("rel", rel);
         link.href = href;
         document.documentElement.appendChild(link);
     };
-
+    // 引入layui
     addScript("https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.13/layui.js");
     addLink("https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.13/css/layui.css");
 
     console.log('ojbk');
+
+
 
     // 监听 URL 变化
     const monitorUrlChanges = () => {
@@ -55,14 +57,22 @@
     const onUrlChange = () => {
         // 每次 URL 变化时都暂停脚本
         isPaused = true;
-        const AppraisalButton = document.getElementById("close-assessment");  // 查找关闭测评按钮
-        const DelGoodButton = document.getElementById("del-good");  // 查找关闭测评按钮
-        if (window.location.href.includes("fxg.jinritemai.com/ffa/g/material/talent-quiz")) {  // 如果 URL 包含测评页面的路径
+        const AppraisalButton = document.getElementById("close-assessment");  // 关闭测评按钮
+        const CompletelyCancelButton = document.getElementById("completely-cancel");  // 关闭测评按钮
+        const DelGoodButton = document.getElementById("del-good");  // 关闭测评按钮
+        if (window.location.href.includes("fxg.jinritemai.com/ffa/g/material/talent-quiz")) {  // 达人测评
             if (!AppraisalButton) addAppraisalButton();  // 如果按钮不存在，则添加按钮
         } else {
             if (AppraisalButton) AppraisalButton.remove();  // 如果不在测评页面且按钮存在，则移除按钮
         }
         if (window.location.href.includes("fxg.jinritemai.com/ffa/g/recycle")) {  // 回收站
+            if (!CompletelyCancelButton) addCompletelyCancelButton();
+        } else {
+            if (CompletelyCancelButton) CompletelyCancelButton.remove();
+        }
+        console.log(DelGoodButton)
+        if (window.location.href.includes("fxg.jinritemai.com/ffa/g/list")) {  // 商品管理
+            console.log('商品管理')
             if (!DelGoodButton) addDelGoodButton();  // 如果按钮不存在，则添加按钮
         } else {
             if (DelGoodButton) DelGoodButton.remove();  // 如果不在测评页面且按钮存在，则移除按钮
@@ -81,10 +91,21 @@
     };
 
     // 添加删除回收站按钮
+    const addCompletelyCancelButton = () => {
+        const button = document.createElement("button");
+        button.id = "completely-cancel";  // 设置按钮的 ID
+        button.innerHTML = "开始自动彻底删除";  // 设置按钮的文本
+        button.className = "layui-btn layui-bg-blue";  // 设置按钮的样式
+        button.style.cssText = "position: fixed; top: 80px; right: 20px; z-index: 9999;";  // 设置按钮的位置和层级
+        button.onclick = CompletelyCancelTogglePause;  // 绑定按钮的点击事件
+        document.body.appendChild(button);  // 将按钮添加到页面中
+    };
+
+    // 添加删除商品按钮
     const addDelGoodButton = () => {
         const button = document.createElement("button");
         button.id = "del-good";  // 设置按钮的 ID
-        button.innerHTML = "开始自动彻底删除";  // 设置按钮的文本
+        button.innerHTML = "批量删除";  // 设置按钮的文本
         button.className = "layui-btn layui-bg-blue";  // 设置按钮的样式
         button.style.cssText = "position: fixed; top: 80px; right: 20px; z-index: 9999;";  // 设置按钮的位置和层级
         button.onclick = DelGoodTogglePause;  // 绑定按钮的点击事件
@@ -101,13 +122,172 @@
     };
 
     // 彻底删除暂停状态
-    const DelGoodTogglePause = () => {
+    const CompletelyCancelTogglePause = () => {
         isPaused = !isPaused;  // 切换暂停状态
-        const button = document.getElementById("del-good");
+        const button = document.getElementById("completely-cancel");
         if (button) button.innerHTML = isPaused ? "开始自动彻底删除" : "停止自动彻底删除";
         layer.msg(isPaused ? "停止脚本！" : "开启脚本！");
-        if (!isPaused) processCurrentPage('del-good');
+        if (!isPaused) processCurrentPage('completely-cancel');
     };
+
+    // 根据id批量删除商品
+    let cookie = '';
+    let goodsId = [];
+    const DelGoodTogglePause = () => {
+        // isPaused = !isPaused;  // 切换暂停状态
+        // const button = document.getElementById("completely-cancel");
+        // if (button) button.innerHTML = isPaused ? "开始自动彻底删除" : "停止自动彻底删除";
+        // layer.msg(isPaused ? "停止脚本！" : "开启脚本！");
+
+        layui.use('layer', function () {
+            var layer = layui.layer;
+            layer.open({
+                type: 1,
+                title: '请输入商品id跟cookie',
+                content: '<div style="padding: 20px 100px;">' +
+                    '<textarea placeholder="商品id" id="goodsId" style="width: 100%;height: 100px;"></textarea>' +
+                    '<textarea placeholder="cookie" id="cookie" style="width: 100%;height: 100px;"></textarea>' +
+                    '<button id="del" class="layui-btn layui-btn-normal">开始删除</button>' +
+                    '</div>',
+                success: function (layero, index) {
+                    // 点击删除按钮
+                    document.getElementById('del').addEventListener('click', function () {
+                        let temp_goodsId = document.getElementById('goodsId').value;
+                        cookie = document.getElementById('cookie').value;
+                        if (temp_goodsId === '') {
+                            layer.msg('商品id不能为空');
+                            return;
+                        }
+                        if (cookie === '') {
+                            layer.msg('cookie不能为空');
+                            return;
+                        }
+                        goodsId = temp_goodsId.split(/[\n,，\s]+/);;
+                        layer.close(index);
+                        // 删除商品
+                        delGood();
+                    });
+                }
+            });
+        });
+    };
+
+    function delGood() {
+        console.log(goodsId)
+        let goodsData = [];
+        for (const g of goodsId) {
+            goodsData.push({
+                id: g,
+                status: 0,
+                msg: '待处理'
+            });
+        }
+
+        let isYes = true;
+        // 访问接口，测试cookie是否有效
+        GM_xmlhttpRequest({
+            method: "GET",
+            url: `https://fxg.jinritemai.com/product/tproduct/list?page=0&pageSize=20&id_name_code=${goodsId[0]}`,
+            headers: {
+                "cookie": cookie,
+            },
+            onload: function (response) {
+                if (response.status !== 200) {
+                    isYes = false;
+                    layer.msg('cookie无效');
+                    return;
+                }
+                console.log((JSON.parse(response.response)));
+            }
+        });
+        if (!isYes) return;
+
+        layer.open({
+            type: 1,
+            // area: ['420px', '240px'], // 宽高
+            content: `
+            <button id="delgoods" class="layui-btn layui-btn-normal">开始删除</button>
+            <table id="ID-table-demo-data"></table>
+            <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+            <script>
+                let temp_goodsData = ${JSON.stringify(goodsData)};
+                layui.use('table', function(){
+                  var table = layui.table;
+                  
+                  // 已知数据渲染
+                  var inst = table.render({
+                    elem: '#ID-table-demo-data',
+                    cols: [[ //标题栏
+                      {field: 'id', title: 'ID',  sort: true},
+                      {field: 'status', title: '状态',  sort: true, templet: function (d) {
+                        if (d.status === 0) {
+                          return '<span style="color: #FF5722;">待处理</span>';
+                        } else if (d.status === 1) {
+                            return '<span style="color: #5FB878;">删除成功</span>';
+                        } else {
+                            return '<span style="color: #FF5722;">删除失败</span>';
+                        }
+                      }},
+                    ]],
+                    data: temp_goodsData,
+                    page: true, // 是否显示分页
+                    limits: [20],
+                    limit: 20 // 每页默认显示的数量
+                  });
+                });
+                
+                document.getElementById('delgoods').addEventListener('click', function () {
+                    let chunkSize = 20;
+                    let totalChunks = Math.ceil(temp_goodsData.length / chunkSize);
+                
+                    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+                        let start = chunkIndex * chunkSize;
+                        let end = Math.min(start + chunkSize, temp_goodsData.length);
+                        let goodsChunk = temp_goodsData.slice(start, end);
+                
+                        layer.msg('开始删除第' + (chunkIndex + 1) + '组商品');
+                
+                        let data = {
+                            product_ids: goodsChunk.map(item => item.id),
+                        };
+                        
+                        var loadIndex = layer.load(2);
+                
+                        $.ajax({
+                            url: "https://fxg.jinritemai.com/product/tproduct/batchDelete",
+                            type: "POST",
+                            headers: {
+                                "cookie": '${cookie}',
+                                "content-type": "application/json",
+                            },
+                            data: JSON.stringify(data),
+                            success: function (res) {
+                                layer.close(loadIndex);
+                                goodsChunk.forEach((item, index) => {
+                                    if (res.code === 0) {
+                                        item.status = 1;
+                                        item.msg = res.msg;
+                                    } else {
+                                        item.status = 2;
+                                        item.msg = res.msg;
+                                    }
+                                });
+                                
+                                layui.use('table', function() {
+                                    var table = layui.table;
+                                    table.reload('ID-table-demo-data', {
+                                        data: temp_goodsData,
+                                    });
+                                });
+                            }
+                        });
+                    }
+                });
+
+                </script>
+            `,
+        });
+    }
 
     // 处理当前页面的任务
     const processCurrentPage = (type, value = null) => {
@@ -120,7 +300,7 @@
                     }, 500);
                 });
                 break;
-            case 'del-good':  // 彻底删除回收站的任务
+            case 'completely-cancel':  // 彻底删除回收站的任务
                 triggerSiblingInputClick(() => {
                     setTimeout(() => {
                         triggerBatchDelButtonClick();
@@ -260,7 +440,7 @@
                                             // 等待加载完成
                                             if (!document.querySelector('.ecom-g-spin-dot-spin')) {
                                                 clearInterval(lodingId);  // 清除定时器
-                                                setTimeout(() => processCurrentPage('del-good'), 1000);
+                                                setTimeout(() => processCurrentPage('completely-cancel'), 1000);
                                             }
                                         }, 500);
                                     }
@@ -316,6 +496,7 @@
     };
 
     class Util {
-        // 这里可以添加公共工具方法
+
+
     }
 })();
