@@ -218,14 +218,14 @@
                   var inst = table.render({
                     elem: '#ID-table-demo-data',
                     cols: [[ //标题栏
-                      {field: 'id', title: 'ID',  sort: true},
-                      {field: 'status', title: '状态',  sort: true, templet: function (d) {
+                      {field: 'id', title: 'ID', width:200,  },
+                      {field: 'status', title: '状态',width:80,  templet: function (d) {
                         if (d.status === 0) {
                           return '<span style="color: #FF5722;">待处理</span>';
                         } else if (d.status === 1) {
                             return '<span style="color: #5FB878;">删除成功</span>';
                         } else {
-                            return '<span style="color: #FF5722;">删除失败</span>';
+                            return '<span style="color: #FF5722;">'+d.msg ?? '删除失败'+'</span>';
                         }
                       }},
                     ]],
@@ -252,24 +252,29 @@
                         };
                         
                         var loadIndex = layer.load(2);
+                        let isAjax = false;
+                        console.log(data)
                 
                         $.ajax({
                             url: "https://fxg.jinritemai.com/product/tproduct/batchDelete",
                             type: "POST",
                             headers: {
                                 "cookie": '${cookie}',
-                                "content-type": "application/json",
+                                "content-type": "application/x-www-form-urlencoded",
                             },
-                            data: JSON.stringify(data),
+                            // 不是异步
+                            async: false,
+                            data: data,
                             success: function (res) {
                                 layer.close(loadIndex);
-                                goodsChunk.forEach((item, index) => {
-                                    if (res.code === 0) {
-                                        item.status = 1;
-                                        item.msg = res.msg;
+                                // 循环res.data
+                                res.data.forEach((item, index) => {
+                                    if (item.code == 0 || item.code == 2010021|| item.code == 2010022) {
+                                        temp_goodsData.find(g => g.id === item.product_id).status = 1;
+                                        temp_goodsData.find(g => g.id === item.product_id).msg = item.msg;
                                     } else {
-                                        item.status = 2;
-                                        item.msg = res.msg;
+                                        temp_goodsData.find(g => g.id === item.product_id).status = 2;
+                                        temp_goodsData.find(g => g.id === item.product_id).msg = item.msg;
                                     }
                                 });
                                 
@@ -279,8 +284,10 @@
                                         data: temp_goodsData,
                                     });
                                 });
+                                isAjax = true;
                             }
                         });
+
                     }
                 });
 
