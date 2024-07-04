@@ -236,7 +236,7 @@
                   });
                 });
                 
-                document.getElementById('delgoods').addEventListener('click', function () {
+                document.getElementById('delgoods').addEventListener('click',async function () {
                     let chunkSize = 20;
                     let totalChunks = Math.ceil(temp_goodsData.length / chunkSize);
                 
@@ -287,6 +287,10 @@
                                 isAjax = true;
                             }
                         });
+                        
+                        while (!isAjax) {
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
 
                     }
                 });
